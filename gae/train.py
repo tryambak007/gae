@@ -15,7 +15,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.metrics import average_precision_score
 
 from gae.optimizer import OptimizerAE, OptimizerVAE
-from gae.input_data import load_data
+from gae.input_data import load_data, load_KG
 from gae.model import GCNModelAE, GCNModelVAE
 from gae.preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple, mask_test_edges
 
@@ -33,11 +33,18 @@ flags.DEFINE_string('model', 'gcn_ae', 'Model string.')
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
 flags.DEFINE_integer('features', 1, 'Whether to use features (1) or not (0).')
 
+flags.DEFINE_integer('custom', 1, 'Use custom input data (1) or not (0).')
+flags.DEFINE_string('custom_path', 'keyconcepts.csv', 'Path to custom input data.')
+
 model_str = FLAGS.model
 dataset_str = FLAGS.dataset
 
+cst_path = FLAGS.custom_path
 # Load data
-adj, features = load_data(dataset_str)
+if FLAGS.custom ==0:
+    adj, features = load_data(dataset_str)
+else:
+    adj, features = load_KG(cst_path)
 
 # Store original adjacency matrix (without diagonal entries) for later
 adj_orig = adj

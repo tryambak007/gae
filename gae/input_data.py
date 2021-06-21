@@ -3,6 +3,42 @@ import sys
 import pickle as pkl
 import networkx as nx
 import scipy.sparse as sp
+import pandas as pd
+
+
+def load_KG(path):
+    keyconcepts = pd.read_csv(path)
+    keyconcepts.drop(['sentence', 'subject', 'relation' , 'object', 'subject_flag', 'object_flag'], axis = 1, inplace = True)
+    mappings = {}
+    inv_map = {}
+    idx = 0
+    for row in keyconcepts.iterrows():
+        subj = row[1]['subject_keys'].strip().lower()
+        obj = row[1]['object_keys'].strip().lower()
+        if subj not in mappings.keys():
+            mappings[subj] = idx
+            inv_map[idx] = subj
+            idx+=1
+        if obj not in mappings.keys():
+            mappings[obj] = idx
+            inv_map[idx] = obj
+            idx += 1
+    print("Total nodes : ", idx)
+    adjacency = {}
+    for row in keyconcepts.iterrows():
+        subidx = mappings[row[1]['subject_keys'].strip().lower()]
+        objidx = mappings[row[1]['object_keys'].strip().lower()]
+
+        if subidx in adjacency.keys():
+            if objidx not in adjacency[subidx]:
+                adjacency[subidx].append(objidx)
+        else:
+            adjacency[subidx] = []
+            adjacency[subidx].append(objidx)
+
+    adj = nx.adjacency_matrix(nx.from_dict_of_lists(adjacency))
+    return adj, np.identity(adj.shape[0])
+
 
 
 def parse_index_file(filename):
