@@ -4,7 +4,20 @@ import pickle as pkl
 import networkx as nx
 import scipy.sparse as sp
 import pandas as pd
+import spacy
 
+w2vmodel = spacy.load("en_core_web_md")
+spl = spacy.load('en_core_web_sm')
+
+def phrase2vec(phrase):
+    #Returns 300 dimensional vector representing the phrase
+    all_stopwords = spl.Defaults.stop_words
+    tokens = phrase.split(" ")
+    tokens_without_sw = [word for word in tokens if not word in all_stopwords]
+    phrase_without_sw = ""
+    for token in tokens_without_sw:
+        phrase_without_sw = phrase_without_sw + " " + token
+    return w2vmodel(phrase_without_sw).vector
 
 def load_KG(path):
     keyconcepts = pd.read_csv(path)
@@ -24,6 +37,14 @@ def load_KG(path):
             inv_map[idx] = obj
             idx += 1
     print("Total nodes : ", idx)
+
+    feature_map = []
+    for i in range(idx):
+        key = inv_map[i]
+        feature_map.append(phrase2vec(key))
+    features = sp.lil_matrix(feature_map)
+
+
     adjacency = {}
     for row in keyconcepts.iterrows():
         subidx = mappings[row[1]['subject_keys'].strip().lower()]
@@ -37,7 +58,7 @@ def load_KG(path):
             adjacency[subidx].append(objidx)
 
     adj = nx.adjacency_matrix(nx.from_dict_of_lists(adjacency))
-    return adj, np.identity(adj.shape[0])
+    return adj, features
 
 
 
